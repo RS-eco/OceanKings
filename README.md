@@ -2,6 +2,8 @@ The Fate of the Kings - How does climate change affect the distribution
 of marine top predators?
 ================
 
+**Please note that this repository is still work in progress\!**
+
 ### Abstract
 
 Marine top predators (cetaceans, pinnipeds, tunas, seabirds,
@@ -46,7 +48,7 @@ change, protected areas, conservation
 
 ``` r
 # Specify path of file directory
-filedir <- "E://Data/"
+filedir <- "/home/matt/Documents"
 ```
 
 Note: You need to adapt filedir according to the path on your computer.
@@ -216,7 +218,7 @@ top_predators <- top_predators[which(x == TRUE),]
 species_ti <- c("albacore tuna", "", "Weddell seal", "Harbor Porpoise", "", "", "Pisaster ochraceus", "African penguin", "Magellanic penguins", "Harbor porpoise", "", "", "Pomatomus saltatrix", "", "Antarctic krill", "Antarctic petrels", "", "", "Mnemiopsis leidyi", "", "", "", "", "", "", "", "Arctocephalus gazella/Antarctic fur seal", "", "", "", "", "Short-tailed shearwater", "", "", "", "", "", "", "", "", "", "", "", "", "", "Lontra felina", "", "", "", "Scolopsis bilineatus", "", "Southern Elephant Seals", "", "", "", "", "Blue shark (Prionace glauca)", "", "", "northern sand lance Ammodytes dubius?", "", "", "Beaked and sperm whales", "Indo-Pacific Humpback Dolphins (Sousa chinensis)", "", "Guiana Dolphins (Sotalia guianensis)", "bonnethead shark (Sphyrna tiburo)", "", "", "Crassostrea virginica?", "", "", "", "northern anchovy", "Spawning Groupers", "Polar bear", "Port Jackson sharks (Heterodontus portusjacksoni)", "White shark", "", "Balearic shearwater", "subantarctic fur seals", "", "", "Magnificent frigatebird (Fregata magnificens)", "", "albacore tuna (Thunnus alalunga)", "Capelin (Mallotus villosus)", "Mediterranean lanternfishes", "Harbor porpoise", "", "Polar cod (Boreogadus saida)", "", "", "Bottlenose dolphins and seabirds", "", "Pissarrachampsa sera?", "", "", "Subantarctic fur seals", "Hake, saithe and Norway pout", "", "", "Leopard seals", "hyperbenthic shrimp (Nauicaris marionis)", "", "Freshwater morays?", "Southern Elephant Seal", "", "dingoes", "Southern Ocean fur seal and albatross", "", "", "", "", "", "African penguin", "", "", "Sea snakes", "", "Gentoo penguins", "Gentoo penguins Pygoscelis papua", "", "", "Orcas", "", "", "Red lionfish Pterois volitans", "Polar bear (Ursus maritimus)", "", "", "", "Longnose gars", "Spiny lobster?", "Harbor seal (Phoca vitulina)", "")
 
 # Marine species mentioned in abstract
-species_ab <- c()
+# species_ab <- c()
 
 # Species names can be extracted from the worrms package!!!
 ```
