@@ -1,0 +1,151 @@
+---
+title: "The Fate of the Kings - How does climate change affect the distribution of marine top predators?"
+output: github_document
+---
+
+**Please note that this repository is still work in progress!**
+
+### Abstract
+
+Marine top predators (cetaceans, pinnipeds, tunas, seabirds, elasmobranchs, turtles and cephalopods) have a huge impact on marine ecosystems, as they have an important top-down influence on marine food webs and thus strongly influence biological productivity. With the advancement of the Anthropocene the effects of anthropogenic activities is steadily increasing, strongly affecting the distribution and abundance of these organisms. Among human influences climate change is one of the most pressing issues and a lot of effort is required in order to limit global warming to a 1.5°C change compared to pre-industrial levels. The global distribution of top marine predators across five different groups (cetaceans, pinnipeds, fishes, seabirds and elasmobranchs) was obtained from the IUCN Red List Spatial Database, the BirdLife International Bird Species Distribution Database and the Ocean Biogeographic Information System (OBIS). The global distribution was modelled for present-day (1980-2010) using various modelling algorithms (Random forests, Maximum entropy, Generalized linear models, Boosted regression trees and Support vector machine) and environmental data (current speed, current direction, temperature, dissolved oxygen, primary productivity, salinity) from several global climate models (“HadGEM2-ES”, “MIROC-ESM-CHEM”, “GFDL-ESM2M”, “IPSL-CM5ALR”) available from the Inter-Sectoral Impact Model Intercomparison Project, as well as bathymetry data available from the General Bathymetric Chart of the Oceans. The change in distribution by mid-century (2036-2065) was then assessed using the future climate projections of the four climate models under the representative concentration pathway 2.6 (RCP2.6), which represents a 1.5°C global warming by 2050. We will determine which species and which group is affected the strongest by climate change and thus needs additional conservation efforts. Furthermore, we compare the change in distribution with the current spatial coverage of marine protected areas to highlight if and where further conservation efforts are needed to prevent a decline in the spatial distribution of these top predators.
+
+**Key words**: top predators, species distribution modelling, climate change, protected areas, conservation
+
+### R Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width=14, fig.height=8, warning=FALSE, comment=NA, message=FALSE)
+```
+
+### Set file directory 
+
+```{r global_options}
+# Specify path of file directory
+filedir <- "/home/matt/Documents"
+```
+
+Note: You need to adapt filedir according to the path on your computer.
+
+### Load and if necessary install required packages
+
+```{r load_packages}
+# Install required packages not yet in library
+packages <- c("ggplot2", "ggpmisc", "raster", "rgdal", "rgeos", "parallel")
+new.packages <- packages[!(packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages); rm(new.packages)
+
+# Load required packages
+l <- sapply(packages, require, character.only = TRUE); rm(packages, l)
+```
+
+## Identify marine top predators
+
+Web of Knowledge: 
+
+Topic search (Marine Top Predator) - 07.06.2017
+250 newest records (Results: 1429 Top predator* marine, 1389 Marine* top predator, 1389 marine top predator, 1484 marine* top* predator)
+
+Topic search (Marine apex predators) - 07.06.2017
+250 newest records (Results: 329 marine* apex predator, 333 apex predator* marine, 332 apex* predator* marine, 328 marine* apex* predator)
+
+## Load Web of Knowledge files
+
+```{r}
+# Load search files
+marine_top_pred <- read.csv2("data/marine_top_predators.csv")
+marine_apex_pred <- read.csv2("data/marine_apex_predators.csv")
+
+# Merge files to see if and how many entries overlap
+top_predators <- dplyr::full_join(marine_top_pred, marine_apex_pred)
+
+# Get title
+top_predators$TI[53:100]
+
+# Get abstract
+abstract <- top_predators$AB[1]
+
+# Get keywords
+head(top_predators$DE)
+
+# Check if paper is marine
+marine_related <- function(x){
+  a <- grepl("ocean", x)
+  b <- grepl("Ocean", x)
+  c <- grepl("sea", x)
+  c <- grepl("Sea", x)
+  d <- grepl("Marine", x)
+  e <- grepl("marine", x)
+  f <- grepl("reef", x)
+  g <- grepl("intertidal", x)
+  if(any(a,b,c,d,e,f,g)){
+    z <- TRUE
+  }else{
+    z <- FALSE
+  }
+  return(z)
+}
+
+marine_abstracts <- sapply(top_predators$AB, FUN=marine_related, USE.NAMES=FALSE)
+marine_titles <- sapply(top_predators$TI, FUN=marine_related, USE.NAMES=FALSE)
+marine_keywords <- sapply(top_predators$DE, FUN=marine_related, USE.NAMES=FALSE)
+
+x <- mapply(any, marine_abstracts, marine_titles, marine_keywords)
+which(x==FALSE)
+top_predators <- top_predators[which(x == TRUE),]
+
+# Check if paper is topic related
+apex_related <- function(x){
+  a <- grepl("top", x)
+  b <- grepl("predator", x)
+  c <- grepl("apex", x)
+  if(any(a,b,c)){
+    z <- TRUE
+  }else{
+    z <- FALSE
+  }
+  return(z)
+}
+
+top_predators_abstracts <- sapply(top_predators$AB, FUN=apex_related, USE.NAMES=FALSE)
+top_predators_titles <- sapply(top_predators$TI, FUN=apex_related, USE.NAMES=FALSE)
+top_predators_keywords <- sapply(top_predators$DE, FUN=apex_related, USE.NAMES=FALSE)
+
+x <- mapply(any, top_predators_abstracts, top_predators_titles, top_predators_keywords)
+top_predators <- top_predators[which(x == TRUE),]
+
+# Manually look for marine species within title and abstract
+
+# Marine species mentioned in title
+species_ti <- c("albacore tuna", "", "Weddell seal", "Harbor Porpoise", "", "", "Pisaster ochraceus", "African penguin", "Magellanic penguins", "Harbor porpoise", "", "", "Pomatomus saltatrix", "", "Antarctic krill", "Antarctic petrels", "", "", "Mnemiopsis leidyi", "", "", "", "", "", "", "", "Arctocephalus gazella/Antarctic fur seal", "", "", "", "", "Short-tailed shearwater", "", "", "", "", "", "", "", "", "", "", "", "", "", "Lontra felina", "", "", "", "Scolopsis bilineatus", "", "Southern Elephant Seals", "", "", "", "", "Blue shark (Prionace glauca)", "", "", "northern sand lance Ammodytes dubius?", "", "", "Beaked and sperm whales", "Indo-Pacific Humpback Dolphins (Sousa chinensis)", "", "Guiana Dolphins (Sotalia guianensis)", "bonnethead shark (Sphyrna tiburo)", "", "", "Crassostrea virginica?", "", "", "", "northern anchovy", "Spawning Groupers", "Polar bear", "Port Jackson sharks (Heterodontus portusjacksoni)", "White shark", "", "Balearic shearwater", "subantarctic fur seals", "", "", "Magnificent frigatebird (Fregata magnificens)", "", "albacore tuna (Thunnus alalunga)", "Capelin (Mallotus villosus)", "Mediterranean lanternfishes", "Harbor porpoise", "", "Polar cod (Boreogadus saida)", "", "", "Bottlenose dolphins and seabirds", "", "Pissarrachampsa sera?", "", "", "Subantarctic fur seals", "Hake, saithe and Norway pout", "", "", "Leopard seals", "hyperbenthic shrimp (Nauicaris marionis)", "", "Freshwater morays?", "Southern Elephant Seal", "", "dingoes", "Southern Ocean fur seal and albatross", "", "", "", "", "", "African penguin", "", "", "Sea snakes", "", "Gentoo penguins", "Gentoo penguins Pygoscelis papua", "", "", "Orcas", "", "", "Red lionfish Pterois volitans", "Polar bear (Ursus maritimus)", "", "", "", "Longnose gars", "Spiny lobster?", "Harbor seal (Phoca vitulina)", "")
+
+# Marine species mentioned in abstract
+# species_ab <- c()
+
+# Species names can be extracted from the worrms package!!!
+```
+
+## Get species data
+
+### Plot global maps of species data
+
+## Load environmental data
+
+### Plot maps of our environmental variables
+
+## Climatic niche
+
+### Extract environmental data
+
+### Plot climatic niche
+
+## SDM
+
+```{r eval=FALSE}
+library(sdm)
+
+data <- sdmData(species, predictors)
+model <- sdm(species ~ pr+tas, data,
+             methods=c("glm", "brt", "maxent", "bioclim", ensemble),
+             test.percent=30, replicates=100, replicate.method="bootstrapping")
+p <- predict(model, predictors)
+```
